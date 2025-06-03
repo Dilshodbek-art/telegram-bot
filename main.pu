@@ -15,16 +15,30 @@ app.add_handler(CommandHandler("start", start))
 
 # Start polling
 app.run_polling()
-from telegram import Update, ReplyKeyboardRemove
+import logging
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
-    CommandHandler, MessageHandler, filters,
-    ConversationHandler, ContextTypes
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    ContextTypes,
+    ConversationHandler
 )
 
-# State constant for conversation
-QUESTION, SCORE = range(2)
+# Enable logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
-# Sample quiz questions
+# Bot Token (replace this with your actual token or use environment variable in Render)
+BOT_TOKEN = "YOUR_BOT_TOKEN"
+
+# States for level test
+QUESTION = 1
+
+# Quiz content
 quiz = [
     {"q": "What’s the plural of 'child'?", "options": ["childs", "childes", "children", "child"], "a": "children"},
     {"q": "Choose the correct sentence.", "options": ["He go to school", "He goes to school", "He going to school", "He gone to school"], "a": "He goes to school"},
@@ -38,14 +52,19 @@ quiz = [
     {"q": "Choose the correct form: He ____ never late.", "options": ["is", "are", "was", "be"], "a": "is"}
 ]
 
-# Store user progress
 user_progress = {}
 
+# Start command
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("👋 Welcome to MyLinguaPal Bot!\nType /leveltest to start your English level test.")
+
+# Start level test
 async def level_test_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_progress[user_id] = {"score": 0, "current_q": 0, "mistakes": []}
     return await ask_question(update, context)
 
+# Ask next question
 async def ask_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     q_index = user_progress[user_id]["current_q"]
@@ -54,12 +73,11 @@ async def ask_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await finish_test(update, context)
 
     question = quiz[q_index]
-    options = question["options"]
-
-    reply_markup = context.bot.build_reply_keyboard([options], one_time_keyboard=True)
+    reply_markup = ReplyKeyboardMarkup([question["options"]], one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(question["q"], reply_markup=reply_markup)
     return QUESTION
 
+# Handle user answer
 async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_answer = update.message.text
@@ -78,6 +96,7 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_progress[user_id]["current_q"] += 1
     return await ask_question(update, context)
 
+# End of quiz
 async def finish_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     score = user_progress[user_id]["score"]
@@ -92,17 +111,30 @@ async def finish_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(result.strip(), reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
+# Cancel command
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Test cancelled.", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
-# Conversation handler
-level_test_handler = ConversationHandler(
-    entry_points=[CommandHandler("leveltest", level_test_start)],
-    states={
-        QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)],
-    },
-    fallbacks=[CommandHandler("cancel", cancel)]
-)
+# Main app setup
+def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-app.add_handler(level_test_handler)
+    # Handlers
+    app.add_handler(CommandHandler("start", start))
+
+    # Level test conversation
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("leveltest", level_test_start)],
+        states={
+            QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)]
+    )
+    app.add_handler(conv_handler)
+
+    print("🤖 Bot is running...")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
