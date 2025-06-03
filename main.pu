@@ -15,3 +15,94 @@ app.add_handler(CommandHandler("start", start))
 
 # Start polling
 app.run_polling()
+from telegram import Update, ReplyKeyboardRemove
+from telegram.ext import (
+    CommandHandler, MessageHandler, filters,
+    ConversationHandler, ContextTypes
+)
+
+# State constant for conversation
+QUESTION, SCORE = range(2)
+
+# Sample quiz questions
+quiz = [
+    {"q": "What’s the plural of 'child'?", "options": ["childs", "childes", "children", "child"], "a": "children"},
+    {"q": "Choose the correct sentence.", "options": ["He go to school", "He goes to school", "He going to school", "He gone to school"], "a": "He goes to school"},
+    {"q": "What's the past tense of 'eat'?", "options": ["ate", "eated", "eats", "eaten"], "a": "ate"},
+    {"q": "Which is a synonym of 'happy'?", "options": ["angry", "sad", "glad", "tired"], "a": "glad"},
+    {"q": "Complete: I have been ____.", "options": ["wait", "waiting", "waited", "waits"], "a": "waiting"},
+    {"q": "What's the opposite of 'cheap'?", "options": ["tiny", "expensive", "slow", "fast"], "a": "expensive"},
+    {"q": "Choose the correct article: ____ apple", "options": ["a", "an", "the", "no article"], "a": "an"},
+    {"q": "What's the superlative form of 'good'?", "options": ["better", "best", "goodest", "more good"], "a": "best"},
+    {"q": "What is the noun in: 'She runs daily.'?", "options": ["runs", "she", "daily", "is"], "a": "she"},
+    {"q": "Choose the correct form: He ____ never late.", "options": ["is", "are", "was", "be"], "a": "is"}
+]
+
+# Store user progress
+user_progress = {}
+
+async def level_test_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    user_progress[user_id] = {"score": 0, "current_q": 0, "mistakes": []}
+    return await ask_question(update, context)
+
+async def ask_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    q_index = user_progress[user_id]["current_q"]
+
+    if q_index >= len(quiz):
+        return await finish_test(update, context)
+
+    question = quiz[q_index]
+    options = question["options"]
+
+    reply_markup = context.bot.build_reply_keyboard([options], one_time_keyboard=True)
+    await update.message.reply_text(question["q"], reply_markup=reply_markup)
+    return QUESTION
+
+async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    user_answer = update.message.text
+    q_index = user_progress[user_id]["current_q"]
+    question = quiz[q_index]
+
+    if user_answer == question["a"]:
+        user_progress[user_id]["score"] += 1
+    else:
+        user_progress[user_id]["mistakes"].append({
+            "question": question["q"],
+            "your_answer": user_answer,
+            "correct": question["a"]
+        })
+
+    user_progress[user_id]["current_q"] += 1
+    return await ask_question(update, context)
+
+async def finish_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    score = user_progress[user_id]["score"]
+    mistakes = user_progress[user_id]["mistakes"]
+
+    result = f"✅ You scored {score} out of {len(quiz)}.\n\n"
+    if mistakes:
+        result += "❌ Mistakes:\n"
+        for m in mistakes:
+            result += f"Q: {m['question']}\nYour answer: {m['your_answer']}\nCorrect: {m['correct']}\n\n"
+
+    await update.message.reply_text(result.strip(), reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Test cancelled.", reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
+
+# Conversation handler
+level_test_handler = ConversationHandler(
+    entry_points=[CommandHandler("leveltest", level_test_start)],
+    states={
+        QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)],
+    },
+    fallbacks=[CommandHandler("cancel", cancel)]
+)
+
+app.add_handler(level_test_handler)
