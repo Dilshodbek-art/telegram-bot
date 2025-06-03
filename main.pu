@@ -1,0 +1,17 @@
+from telegram.ext import ApplicationBuilder, CommandHandler
+
+# Your Telegram bot token
+TOKEN = "7740905229:AAEJ9RYdOCxB_Udgy4n0bjo5Vh2kkgfWJAw"
+
+# Create bot application
+app = ApplicationBuilder().token(TOKEN).build()
+
+# Define /start command
+async def start(update, context):
+    await update.message.reply_text("Hello from Render and GitHub!")
+
+# Add command handler
+app.add_handler(CommandHandler("start", start))
+
+# Start polling
+app.run_polling()
