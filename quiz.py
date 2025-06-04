@@ -1,3 +1,10 @@
+from telegram import Update
+from telegram.ext import ContextTypes
+
+async def quiz_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Quiz started! Question 1:\nWhat is the capital of France?\nA) London\nB) Paris\nC) Berlin"
+    )
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler
 
