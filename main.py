@@ -1,3 +1,4 @@
+from telegram import BotCommand
 import datetime
 from telegram import Update
 from telegram.ext import (
@@ -179,3 +180,15 @@ async def set_commands(application):
         BotCommand("quiz", "Take a short quiz")
     ]
     await application.bot.set_my_commands(commands)
+async def set_commands(application):
+    commands = [
+        BotCommand("start", "Start the bot"),
+        BotCommand("leveltest", "Take a level test"),
+        BotCommand("dailyword", "Get today’s word"),
+        BotCommand("quiz", "Take a short quiz"),
+        BotCommand("cancel", "Cancel current action")
+    ]
+    await application.bot.set_my_commands(commands)
+    application = Application.builder().token("YOUR_BOT_TOKEN").build()
+
+await set_commands(application)
