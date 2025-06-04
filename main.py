@@ -114,3 +114,13 @@ def main():
 
 if __name__ == "__main__":
     main()
+    application.add_handler(CommandHandler("quiz", quiz_start))
+    from quiz import quiz_start
+
+def main():
+    application = Application.builder().token("YOUR_BOT_TOKEN").build()
+
+    # other handlers...
+    application.add_handler(CommandHandler("quiz", quiz_start))
+
+    application.run_polling()
