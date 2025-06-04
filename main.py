@@ -165,3 +165,64 @@ app.bot.set_my_commands([
     BotCommand("leveltest", "Take a 10-question language level test"),
     # Add more commands here as needed
 ])
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
+
+# Sample quiz questions
+quiz_questions = [
+    {
+        "question": "What is the capital of France?",
+        "options": ["Berlin", "Paris", "London", "Rome"],
+        "correct": 1
+    },
+    {
+        "question": "Which language is used for web apps?",
+        "options": ["Python", "HTML", "C++", "Java"],
+        "correct": 1
+    }
+]
+
+user_quiz_data = {}
+
+async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    user_quiz_data[user_id] = {"score": 0, "current_q": 0}
+    await send_question(update, context)
+
+async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    data = user_quiz_data[user_id]
+    q_num = data["current_q"]
+
+    if q_num < len(quiz_questions):
+        question = quiz_questions[q_num]
+        buttons = [
+            [InlineKeyboardButton(opt, callback_data=str(i))] 
+            for i, opt in enumerate(question["options"])
+        ]
+        reply_markup = InlineKeyboardMarkup(buttons)
+        if update.callback_query:
+            await update.callback_query.message.reply_text(question["question"], reply_markup=reply_markup)
+        else:
+            await update.message.reply_text(question["question"], reply_markup=reply_markup)
+    else:
+        await update.message.reply_text(f"Quiz finished! Your score: {data['score']}/{len(quiz_questions)}")
+        del user_quiz_data[user_id]
+
+async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    user_id = query.from_user.id
+    data = user_quiz_data[user_id]
+    q_num = data["current_q"]
+    selected = int(query.data)
+    correct = quiz_questions[q_num]["correct"]
+
+    if selected == correct:
+        data["score"] += 1
+
+    data["current_q"] += 1
+    await query.answer()
+    await send_question(update, context)
+    application.add_handler(CommandHandler("quiz", quiz))
+application.add_handler(CallbackQueryHandler(quiz_answer))
+BotCommand("quiz", "Take a short quiz"),
