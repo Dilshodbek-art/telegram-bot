@@ -110,3 +110,40 @@ def main():
 
 if __name__ == '__main__':
     main()
+    from telegram import Update, ReplyKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+
+# Define the main menu keyboard
+menu_keyboard = [['Level Test', 'Daily Word'], ['Help', 'About']]
+menu_markup = ReplyKeyboardMarkup(menu_keyboard, one_time_keyboard=False, resize_keyboard=True)
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Welcome! Choose an option below:",
+        reply_markup=menu_markup
+    )
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+
+    if text == "Level Test":
+        await update.message.reply_text("Starting your level test...")
+        # Call your level test function here
+        # e.g. await start_level_test(update, context)
+    elif text == "Daily Word":
+        await update.message.reply_text("Here's your daily word...")
+        # Call your daily word function here
+    elif text == "Help":
+        await update.message.reply_text("Help info here.")
+    elif text == "About":
+        await update.message.reply_text("About info here.")
+    else:
+        await update.message.reply_text("Please choose an option from the menu.")
+
+if __name__ == "__main__":
+    app = ApplicationBuilder().token("7191481336:AAEyEAfMdzAydvQldhaZU-WHuZaBQMg9QYY").build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    app.run_polling()
