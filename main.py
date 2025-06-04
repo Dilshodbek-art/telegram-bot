@@ -147,3 +147,13 @@ if __name__ == "__main__":
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     app.run_polling()
+    import logging
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+def error_handler(update, context):
+    logging.error(msg="Exception while handling an update:", exc_info=context.error)
+
+app.add_error_handler(error_handler)
