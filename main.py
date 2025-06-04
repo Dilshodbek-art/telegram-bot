@@ -1,3 +1,4 @@
+from quiz import get_quiz_handler
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -44,6 +45,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Use /test to start the level test.\n"
         "Use /cancel to stop the test anytime."
     )
+    await application.bot.set_my_commands([
+    BotCommand("start", "Start the bot"),
+    BotCommand("dailyword", "Get daily word"),
+    BotCommand("test", "Start level test"),
+    BotCommand("quiz", "Start a short quiz"),
+    BotCommand("cancel", "Cancel current action")
+])
 
 async def dailyword(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Pick daily word based on day of year (cycles through daily_words)
