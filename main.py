@@ -155,3 +155,7 @@ async def cancel_test(update: Update, context: ContextTypes.DEFAULT_TYPE):
         fallbacks=[CommandHandler("cancel", cancel_test)],
     )
     application.add_handler(level_conv)
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("👋 Hello! Welcome to MyLinguaPal!")
+
+application.add_handler(CommandHandler("start", start))
