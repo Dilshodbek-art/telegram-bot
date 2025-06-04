@@ -157,3 +157,11 @@ def error_handler(update, context):
     logging.error(msg="Exception while handling an update:", exc_info=context.error)
 
 app.add_error_handler(error_handler)
+from telegram import BotCommand
+
+app.bot.set_my_commands([
+    BotCommand("start", "Start the bot"),
+    BotCommand("dailyword", "Receive a new word every day"),
+    BotCommand("leveltest", "Take a 10-question language level test"),
+    # Add more commands here as needed
+])
