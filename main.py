@@ -25,7 +25,7 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Run the bot
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(7191481336:AAEyEAfMdzAydvQldhaZU-WHuZaBQMg9QYY).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
